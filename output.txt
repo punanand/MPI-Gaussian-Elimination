@@ -1,0 +1,2 @@
+The solution of the system of equations is 
+{0.200322 0.192672 -2.173975 0.228765 -1.390008 }
