@@ -3,9 +3,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define max(a,b) \
+	({ __typeof__ (a) _a = (a); \
+		__typeof__ (b) _b = (b); \
+		_a > _b ? _a : _b; })
+
+#define min(a,b) \
+	({ __typeof__ (a) _a = (a); \
+		__typeof__ (b) _b = (b); \
+		_a < _b ? _a : _b; })
+
 /**
  * Subtracts an earlier row of the matrix with all later rows that are present in the current process
- * @param recv_id       The row ID of the recieved row
+ * @param recv_id       The ID of the process from which the row was received
  * @param id            ID of current process
  * @param num_eq        The number of equations in the system
  * @param proc_rows     The chunk of the coefficient matrix contained within current process
@@ -52,15 +62,16 @@ void perform_elimination(int recv_id, int id, int num_eq, double* proc_rows, dou
  * @return The index of the pivot element
  */
 int compute_pivot(int curr, int num_proc, int num_eq, double* proc_rows) {
-	double mx = -1.0;
+	double mx = -1;
 	int pivot;
 	int row_id = curr / num_proc;
+
 	for(int i = curr; i < num_eq; i++) {
 		double val = proc_rows[(row_id * num_eq) + i];
 		if(val < 0)
 			val *= -1;
 		if(val > mx) {
-			mx = (val);
+			mx = val;
 			pivot = i;
 		}
 	}
@@ -89,7 +100,6 @@ void perform_division(int id, int curr, double* proc_rows, int pivot, int num_pr
 	}
 	proc_vals[row_id] /= piv_val;
 }
-
 
 int main(int argc, char** argv) {
 	int num_proc; // number of processors
@@ -213,11 +223,11 @@ int main(int argc, char** argv) {
 	int prev_proc = (id - 1 + num_proc) % num_proc;
 
 	
-	int curr = id; 					// The row which is being processes currently
-	int prev_curr = -1; 			// Id of the previous row
-	int piv; 						// Id of the pivot element in the current row
-	double recvd_row[num_eq + 2]; 	// recvd_row[num_eq] = pivot, recvd_row[num_eq + 1] = y-value
-	MPI_Status st; 					// temoporary status variable
+	int curr = id; // The row which is being processes currently
+	int prev_curr = -1; // Id of the previous row
+	int piv; // Id of the pivot element in the current row
+	double recvd_row[num_eq + 2]; // recvd_row[num_eq] = pivot, recvd_row[num_eq + 1] = y-value
+	MPI_Status st; // temoporary status variable
 
 	/*************** Upper Triangualar Matrix Generation Phase ***************/
 
@@ -226,15 +236,15 @@ int main(int argc, char** argv) {
 		performing relevant communications in a pipelined manner.
 	*/
 	for(int cnt = 0; cnt < rows_per_proc; cnt++) {
-		
 		/* Iterating over all the rows before the current row and previously processed row, to perform elimination corresponding to that row */
 		for(int i = prev_curr + 1; i < curr; i++) {
 			// pipelined send receive of all rows between previous row and current row
-			MPI_Recv(recvd_row, num_eq + 2, MPI_DOUBLE, prev_proc, i, MPI_COMM_WORLD, &st);
 			
+			MPI_Recv(recvd_row, num_eq + 2, MPI_DOUBLE, prev_proc, i, MPI_COMM_WORLD, &st);
 			/* 
 				The recieved row has traversed (curr - i) number of times, so it it has traversed num_proc or more times, 
-				it has been delivered to all processes
+				it has been delivered to all processes 
+				TODO: check this
 			*/
 			if(curr - i < num_proc - 1)
 				MPI_Send(recvd_row, num_eq + 2, MPI_DOUBLE, next_proc, i, MPI_COMM_WORLD);
@@ -243,7 +253,6 @@ int main(int argc, char** argv) {
 			perform_elimination(i, id, num_eq, proc_rows, proc_vals, curr, recvd_row, rows_per_proc, num_proc, var_perm);
 		}
 		piv = compute_pivot(curr, num_proc, num_eq, proc_rows); 
-		
 		int tmp = var_perm[piv];
 		var_perm[piv] = var_perm[curr];
 		var_perm[curr] = tmp;
@@ -257,35 +266,28 @@ int main(int argc, char** argv) {
 		send_buf[num_eq] = piv;
 		send_buf[num_eq + 1] = proc_vals[cnt];
 		
-		if(curr < num_eq) {
-			
-			/* We do not want to send last row */
-			MPI_Send(send_buf, num_eq + 2, MPI_DOUBLE, next_proc, curr, MPI_COMM_WORLD);
-		}
-		
+		/* We do not want to send last row */
+		MPI_Send(send_buf, num_eq + 2, MPI_DOUBLE, next_proc, curr, MPI_COMM_WORLD);
+
 		prev_curr = curr;
 		curr += num_proc;
 		
 		perform_elimination(prev_curr, id, num_eq, proc_rows, proc_vals, curr, send_buf, rows_per_proc, num_proc, var_perm);
 	}
 
+	/**
+		recieving the rows that are not to be processed, but we need it for swapping rows if any
+	*/
+	for(int i = prev_curr + 1; i < num_eq; i++) {
+		MPI_Recv(recvd_row, num_eq + 2, MPI_DOUBLE, prev_proc, i, MPI_COMM_WORLD, &st);
+		
+		if(curr - i < num_proc - 1) 
+			MPI_Send(recvd_row, num_eq + 2, MPI_DOUBLE, next_proc, i, MPI_COMM_WORLD);
+
+		perform_elimination(i, id, num_eq, proc_rows, proc_vals, curr, recvd_row, rows_per_proc, num_proc, var_perm);
+	}
+
 	MPI_Barrier(MPI_COMM_WORLD);
-
-	// char fname[15];
-	// sprintf(fname, "out%d.txt", id);
-	// FILE* fptr = fopen(fname, "w");
-
-	// for(int i = 0; i < rows_per_proc; i++) {
-	//  for (int j = 0; j < num_eq; j++) {
-	//      fprintf(fptr, "%lf ", proc_rows[i*num_eq + j]);
-	//  }
-	//  fprintf(fptr, "%lf\n", proc_vals[i]);
-	// }
-	
-	// fprintf(fptr, "Var perm\n");
-	// for (int j = 0; j < num_eq; j++) {
-	//  fprintf(fptr, "%d ", var_perm[j]);
-	// }
 
 	/*************** Back Substitution Phase ***************/
 	
@@ -293,25 +295,27 @@ int main(int argc, char** argv) {
 	int prev_lst = num_eq;
 	double x_val;
 	int count = 1;
+
 	for(int cnt = rows_per_proc - 1; cnt >= 0; cnt--) {
 		for(int i = prev_lst - 1; i > lst; i--) {
 			MPI_Recv(&x_val, count, MPI_DOUBLE, next_proc, i + num_eq, MPI_COMM_WORLD, &st);
-			if(i - lst < num_proc - 1) {
+			
+			if(i - lst < num_proc - 1)
 				MPI_Send(&x_val, count, MPI_DOUBLE, prev_proc, i + num_eq, MPI_COMM_WORLD);
-			}
-			for(int k = cnt; k >= 0; k--) {
+			
+			for(int k = cnt; k >= 0; k--) 
 				proc_vals[k] -= proc_rows[(k * num_eq) + i] * x_val;
-			}
 		}
 		double ans = proc_vals[cnt];
-		for(int k = cnt - 1; k >= 0; k--) {
-			proc_vals[k] -= proc_rows[(k * num_eq) + lst] * ans;
-		}
 
+		for(int k = cnt - 1; k >= 0; k--)
+			proc_vals[k] -= proc_rows[(k * num_eq) + lst] * ans;
+		
 		if(lst > 0) {
 			/* We don't want to send first pivot */
 			MPI_Send(&ans, count, MPI_DOUBLE, prev_proc, lst + num_eq, MPI_COMM_WORLD);
 		}
+		
 		prev_lst = lst;
 		lst -= num_proc;
 	}
@@ -362,10 +366,6 @@ int main(int argc, char** argv) {
 	if(id == 0) {
 		printf("Time taken for execution is %lf\n", time_taken);
 	}
-	 
 	MPI_Finalize();
 	return 0;
 }
-
-
-// MISTAKE: in the end we are not taking into account the already complreted processes.

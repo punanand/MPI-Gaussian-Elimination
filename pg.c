@@ -325,7 +325,9 @@ int main(int argc, char** argv) {
 	}
 
 
-	/* added code: Todo: write comments */
+	/**
+		recieving the rows that are not to be processed, but we need it for swapping rows if any
+	*/
 	for(int i = prev_curr + 1; i < num_eq; i++) {
 		printf("@%d, ready for %d\n", id, i);
 		MPI_Recv(recvd_row, num_eq + 2, MPI_DOUBLE, prev_proc, i, MPI_COMM_WORLD, &st);
@@ -349,7 +351,6 @@ int main(int argc, char** argv) {
 		}
 		printf("\n");
 	}
-	/* added code ends */	
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -450,7 +451,6 @@ int main(int argc, char** argv) {
 	if(id == 0) {
 		printf("Time taken for execution is %lf\n", time_taken);
 	}
-	 
 	MPI_Finalize();
 	return 0;
 }
