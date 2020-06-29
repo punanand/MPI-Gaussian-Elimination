@@ -409,15 +409,15 @@ int main(int argc, char** argv) {
 
 	MPI_Gatherv(proc_vals, rows_per_proc, MPI_DOUBLE, res, divs, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	
-	int proc_with_last_row = (num_eq - 1) % num_proc;
+	// int proc_with_last_row = (num_eq - 1) % num_proc;
 
-	if(proc_with_last_row != 0 && id == proc_with_last_row) {
-		MPI_Send(var_perm, num_eq, MPI_INT, 0, num_eq * 4 + 4, MPI_COMM_WORLD);
-	}
+	// if(proc_with_last_row != 0 && id == proc_with_last_row) {
+	// 	MPI_Send(var_perm, num_eq, MPI_INT, 0, num_eq * 4 + 4, MPI_COMM_WORLD);
+	// }
 
 	if(id == 0) {
-		if(proc_with_last_row != 0)
-			MPI_Recv(var_perm, num_eq, MPI_INT, proc_with_last_row, num_eq * 4 + 4, MPI_COMM_WORLD, &st);
+		// if(proc_with_last_row != 0)
+		// 	MPI_Recv(var_perm, num_eq, MPI_INT, proc_with_last_row, num_eq * 4 + 4, MPI_COMM_WORLD, &st);
 		
 		int k = 0;
 		double solution[num_eq];

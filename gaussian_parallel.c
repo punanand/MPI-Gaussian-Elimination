@@ -132,12 +132,12 @@ int main(int argc, char** argv) {
 		The memory is assigned only to the root process.
 	*/
 	
-	double eq_mat[num_eq * num_eq]; //double eq_mat[num_eq][num_eq]; flattened to 1d
-	double val_mat[num_eq]; // Rhs values (y)
+	double eq_mat[num_eq * num_eq]; 	//double eq_mat[num_eq][num_eq]; flattened to 1d
+	double val_mat[num_eq]; 			// Rhs values (y)
 	
 	/* for flattening */
-	int divs[num_proc]; // Number of coefficients per proc
-	int displs[num_proc]; // Begining index of coefficients of each process
+	int divs[num_proc]; 	// Number of coefficients per proc
+	int displs[num_proc]; 	// Begining index of coefficients of each process
 
 	time_taken = MPI_Wtime(); // recording start time
 
@@ -145,8 +145,8 @@ int main(int argc, char** argv) {
 	int rpp = num_eq / num_proc; // temporary variables
 
 	 
-	int np0 = num_proc - (num_eq % num_proc); // Number of processes with rows = rpp (np0),
-	int np1 = num_proc - np0; // number of processes with rows = rpp + 1(np1)
+	int np0 = num_proc - (num_eq % num_proc); 	// Number of processes with rows = rpp (np0),
+	int np1 = num_proc - np0; 					// number of processes with rows = rpp + 1(np1)
 
 	/* assigning rows_per_proc based on the rank */
 	if(id >= np1)
@@ -223,11 +223,11 @@ int main(int argc, char** argv) {
 	int prev_proc = (id - 1 + num_proc) % num_proc;
 
 	
-	int curr = id; // The row which is being processes currently
-	int prev_curr = -1; // Id of the previous row
-	int piv; // Id of the pivot element in the current row
-	double recvd_row[num_eq + 2]; // recvd_row[num_eq] = pivot, recvd_row[num_eq + 1] = y-value
-	MPI_Status st; // temoporary status variable
+	int curr = id; 					// The row which is being processes currently
+	int prev_curr = -1; 			// Id of the previous row
+	int piv; 						// Id of the pivot element in the current row
+	double recvd_row[num_eq + 2]; 	// recvd_row[num_eq] = pivot, recvd_row[num_eq + 1] = y-value
+	MPI_Status st; 					// temoporary status variable
 
 	/*************** Upper Triangualar Matrix Generation Phase ***************/
 
@@ -253,9 +253,10 @@ int main(int argc, char** argv) {
 			perform_elimination(i, id, num_eq, proc_rows, proc_vals, curr, recvd_row, rows_per_proc, num_proc, var_perm);
 		}
 		piv = compute_pivot(curr, num_proc, num_eq, proc_rows); 
-		int tmp = var_perm[piv];
-		var_perm[piv] = var_perm[curr];
-		var_perm[curr] = tmp;
+
+		// int tmp = var_perm[piv];
+		// var_perm[piv] = var_perm[curr];
+		// var_perm[curr] = tmp;
 
 		perform_division(id, curr, proc_rows, piv, num_proc, num_eq, rows_per_proc, proc_vals);
 		
@@ -315,7 +316,7 @@ int main(int argc, char** argv) {
 			/* We don't want to send first pivot */
 			MPI_Send(&ans, count, MPI_DOUBLE, prev_proc, lst + num_eq, MPI_COMM_WORLD);
 		}
-		
+
 		prev_lst = lst;
 		lst -= num_proc;
 	}
@@ -324,15 +325,7 @@ int main(int argc, char** argv) {
 
 	MPI_Gatherv(proc_vals, rows_per_proc, MPI_DOUBLE, res, divs, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	
-	int proc_with_last_row = (num_eq - 1) % num_proc;
-
-	if(proc_with_last_row != 0 && id == proc_with_last_row) {
-		MPI_Send(var_perm, num_eq, MPI_INT, 0, num_eq * 4 + 4, MPI_COMM_WORLD);
-	}
-
 	if(id == 0) {
-		if(proc_with_last_row != 0)
-			MPI_Recv(var_perm, num_eq, MPI_INT, proc_with_last_row, num_eq * 4 + 4, MPI_COMM_WORLD, &st);
 		
 		int k = 0;
 		double solution[num_eq];
@@ -350,11 +343,10 @@ int main(int argc, char** argv) {
 		
 		/* print output */
 		FILE* outfile = fopen("output.txt", "w");
-		fprintf(outfile, "The solution of the system of equations is \n{");
+		fprintf(outfile, "The solution of the system of equations is: \n");
 		for(int i = 0; i < num_eq; i++) {
-			fprintf(outfile, "%lf ", sol[i]);
+			fprintf(outfile, "x%d = %lf \n", i + 1, sol[i]);
 		}
-		fprintf(outfile, "}\n");
 		fclose(outfile);
 	}
 	  

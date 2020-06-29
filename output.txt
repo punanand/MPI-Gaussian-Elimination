@@ -1,2 +1,6 @@
-The solution of the system of equations is 
-{0.200322 0.192672 -2.173975 0.228765 -1.390008 }
+The solution of the system of equations is: 
+x1 = -0.004297 
+x2 = -0.024478 
+x3 = 0.254126 
+x4 = -0.021241 
+x5 = 1.876410 

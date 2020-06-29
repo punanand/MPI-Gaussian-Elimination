@@ -1,0 +1,16 @@
+Upper Triangular Matrix:
+cnt = 0
+-0.029732 
+
+Post UTM
+0.000000 1.000000 0.080572 -0.000137 0.097350 -0.000342
+Var perm
+3 1 0 4 2 
+Back Substitution Steps
+cnt: 0
+i = 4, prev_lst = 5, lst = 1, Received -2.173975 from 2
+i = 4, proc_vals = i = 3, prev_lst = 5, lst = 1, Received -1.390008 from 2
+i = 3, prev_lst = 5, lst = 1, Sent -1.390008 to 0
+i = 3, proc_vals = i = 2, prev_lst = 5, lst = 1, Received 0.228765 from 2
+i = 2, prev_lst = 5, lst = 1, Sent 0.228765 to 0
+i = 2, proc_vals = cnt = 0, proc_vals = 
