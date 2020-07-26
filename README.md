@@ -1,4 +1,27 @@
 # Gaussian Elimination using MPI
+
+## Execution Requirements
+The program expects a single command line argument specifying the name of the input file. The structure of the file should be such that the first line specifies the number of equations. Thereafter, each line contains the coefficients of the variables of an equation, and the value of that equation, all present aas space separated values. For example. For the following system of equations:
+
+```
+3x + 4y - 2z = 5
+2x + 1.6y + 4.4z = 3.9
+7x - 3y + z = 1.2
+```
+
+The input file should be as follows:
+```
+3
+3 4 -2 5
+2 1.6 4.4 3.9
+7 -3 1 1.2
+```
+Sample compilation, assuming mpich as the platform:
+
+`mpicc gaussian_parallel.c`
+
+`mpiexec -n <num_processors> ./a.out <intput_file>`
+
 This program solves a system of linear equations using the Gaussian Elimination technique. The normal sequential method, as applied on an augmented matrix, consists of:
  * Formation of an Upper Triangular Matrix
  * Back-substitution from bottom to top
