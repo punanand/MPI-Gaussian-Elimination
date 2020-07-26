@@ -22,6 +22,8 @@ Sample compilation, assuming mpich as the platform:
 
 `mpiexec -n <num_processors> ./a.out <intput_file>`
 
+## Introduction
+
 This program solves a system of linear equations using the Gaussian Elimination technique. The normal sequential method, as applied on an augmented matrix, consists of:
  * Formation of an Upper Triangular Matrix
  * Back-substitution from bottom to top
